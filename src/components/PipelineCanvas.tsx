@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Loader2, AlertCircle, Search, X } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, ChevronUp, Loader2, Search, X } from 'lucide-react';
 import { MODULE_MAP } from '../shared/catalog';
 import {
   NodeExecutionSummary,
@@ -19,6 +19,8 @@ interface PipelineCanvasProps {
   onTitleChange: (nextTitle: string) => void;
   onSelectNode: (nodeId: string | null) => void;
   onMoveNode: (nodeId: string, x: number, y: number) => void;
+  onToggleComment: (nodeId: string) => void;
+  onUpdateComment: (nodeId: string, comment: string, expanded?: boolean) => void;
   onDropNewModule: (typeId: string, x: number, y: number, customLabel?: string, customParams?: Record<string, any>) => void;
   onConnectPorts: (sourceNodeId: string, sourcePortId: string, targetNodeId: string, targetPortId: string) => void;
   onDeleteEdge: (edgeId: string) => void;
@@ -27,11 +29,13 @@ interface PipelineCanvasProps {
 }
 
 export function getNodeWidth(node: PipelineNode): number {
-  const est = node.label.length * 7.2 + 82;
+  const est = node.label.length * 7.2 + 86;
   return Math.max(198, Math.min(264, Math.round(est)));
 }
 
-const NODE_HEIGHT = 44;
+export function getNodeHeight(node: PipelineNode): number {
+  return node.commentExpanded ? 78 : 44;
+}
 
 function getPortOffset(index: number, count: number, width: number): number {
   if (count <= 1) return width * 0.5;
@@ -51,6 +55,8 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
   onTitleChange,
   onSelectNode,
   onMoveNode,
+  onToggleComment,
+  onUpdateComment,
   onDropNewModule,
   onConnectPorts,
   onDeleteEdge,
@@ -163,9 +169,9 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
   }, [selectedEdgeId, onDeleteEdge]);
 
   const nodePositions = useMemo(() => {
-    const map = new Map<string, { node: PipelineNode; width: number }>();
+    const map = new Map<string, { node: PipelineNode; width: number; height: number }>();
     for (const n of graph.nodes) {
-      map.set(n.id, { node: n, width: getNodeWidth(n) });
+      map.set(n.id, { node: n, width: getNodeWidth(n), height: getNodeHeight(n) });
     }
     return map;
   }, [graph.nodes]);
@@ -188,10 +194,11 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
     for (const n of graph.nodes) {
       const w = getNodeWidth(n);
+      const h = getNodeHeight(n);
       minX = Math.min(minX, n.x);
       minY = Math.min(minY, n.y);
       maxX = Math.max(maxX, n.x + w);
-      maxY = Math.max(maxY, n.y + NODE_HEIGHT);
+      maxY = Math.max(maxY, n.y + h);
     }
     const contentW = maxX - minX + 80;
     const contentH = maxY - minY + 120;
@@ -381,7 +388,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
             const dstIdx = Math.max(0, dstPorts.findIndex((p) => p.id === edge.targetPortId));
 
             const x1 = src.node.x + getPortOffset(srcIdx, srcPorts.length, src.width);
-            const y1 = src.node.y + NODE_HEIGHT;
+            const y1 = src.node.y + src.height;
             const x2 = dst.node.x + getPortOffset(dstIdx, dstPorts.length, dst.width);
             const y2 = dst.node.y - 3;
             const d = renderEdgePath(x1, y1, x2, y2);
@@ -389,7 +396,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
 
             return (
               <g key={edge.id} className="pointer-events-auto cursor-pointer">
-                {/* Invisible wider hit area */}
                 <path
                   d={d}
                   fill="none"
@@ -417,7 +423,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
             );
           })}
 
-          {/* Live Connection Drag Preview */}
           {connecting && (
             <path
               d={renderEdgePath(
@@ -438,6 +443,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
         {graph.nodes.map((node) => {
           const def = MODULE_MAP[node.typeId];
           const width = getNodeWidth(node);
+          const height = getNodeHeight(node);
           const isSelected = graph.selectedNodeId === node.id;
           const result = nodeResults[node.id];
           const effectiveStatus = isRunning
@@ -461,13 +467,13 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
                 left: node.x,
                 top: node.y,
                 width,
-                height: NODE_HEIGHT,
+                height,
               }}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 setSelectedEdgeId(null);
                 onSelectNode(node.id);
-                if (!panMode) {
+                if (!panMode && !(e.target as HTMLElement).closest('input')) {
                   setDraggingNode({
                     nodeId: node.id,
                     startClientX: e.clientX,
@@ -481,7 +487,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
                 e.stopPropagation();
                 if (result) onVisualizeNode(node.id);
               }}
-              className={`absolute bg-white rounded-[6px] flex items-center px-3 gap-2.5 transition-opacity ${
+              className={`group absolute bg-white rounded-[6px] flex flex-col justify-start px-3 pt-2.5 transition-opacity ${
                 dimmed ? 'opacity-30' : 'opacity-100'
               } ${
                 isSelected
@@ -522,25 +528,59 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
                 );
               })}
 
-              {/* Node Left Icon */}
-              <ModuleIcon iconType={def?.iconType || 'model-class'} className="w-[20px] h-[20px] shrink-0" />
-
-              {/* Node Title */}
-              <span className="flex-1 text-[12.5px] font-normal text-[#333333] whitespace-nowrap truncate">
-                {node.label}
-              </span>
-
-              {/* Right Status Indicator */}
-              {effectiveStatus === 'completed' && (
-                <Check className="w-[16px] h-[16px] text-[#66B300] shrink-0" strokeWidth={2.6} />
-              )}
-              {effectiveStatus === 'running' && (
-                <Loader2 className="w-[15px] h-[15px] text-[#0078D7] animate-spin shrink-0" />
-              )}
-              {effectiveStatus === 'error' && (
-                <span title={result?.errorMessage || node.errorMessage || 'Execution error'}>
-                  <AlertCircle className="w-[16px] h-[16px] text-[#C62828] shrink-0" />
+              {/* Primary Node Header Row */}
+              <div className="flex items-center gap-2 min-w-0">
+                <ModuleIcon iconType={def?.iconType || 'model-class'} className="w-[20px] h-[20px] shrink-0" />
+                <span className="flex-1 text-[12.5px] font-normal text-[#333333] whitespace-nowrap truncate">
+                  {node.label}
                 </span>
+
+                {/* Comment Expand/Collapse Chevron matching Metadata Editor / Project Columns in image_289b89cf.png */}
+                <button
+                  type="button"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleComment(node.id);
+                  }}
+                  title={node.commentExpanded ? 'Collapse comment' : 'Expand module comment'}
+                  className={`p-0.5 text-[#555555] hover:text-[#0078D7] transition-opacity shrink-0 ${
+                    node.commentExpanded || node.comment ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                  }`}
+                >
+                  {node.commentExpanded ? (
+                    <ChevronUp className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  )}
+                </button>
+
+                {/* Status Indicator */}
+                {effectiveStatus === 'completed' && (
+                  <Check className="w-[16px] h-[16px] text-[#66B300] shrink-0" strokeWidth={2.6} />
+                )}
+                {effectiveStatus === 'running' && (
+                  <Loader2 className="w-[15px] h-[15px] text-[#0078D7] animate-spin shrink-0" />
+                )}
+                {effectiveStatus === 'error' && (
+                  <span title={result?.errorMessage || node.errorMessage || 'Execution error'}>
+                    <AlertCircle className="w-[16px] h-[16px] text-[#C62828] shrink-0" />
+                  </span>
+                )}
+              </div>
+
+              {/* Expanded Inline Comment Row matching image_289b89cf.png */}
+              {node.commentExpanded && (
+                <div className="mt-1.5 pl-[28px] pr-1">
+                  <input
+                    type="text"
+                    value={node.comment || ''}
+                    placeholder="Add module note..."
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onChange={(e) => onUpdateComment(node.id, e.target.value, true)}
+                    className="w-full text-[11px] text-[#666666] bg-transparent border-b border-transparent focus:border-[#C8C8C8] focus:outline-none truncate"
+                  />
+                </div>
               )}
 
               {/* Bottom Output Ports */}
@@ -558,9 +598,9 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
                         sourceNodeId: node.id,
                         sourcePortId: port.id,
                         startX: node.x + px,
-                        startY: node.y + NODE_HEIGHT,
+                        startY: node.y + height,
                         currX: node.x + px,
-                        currY: node.y + NODE_HEIGHT,
+                        currY: node.y + height,
                       });
                     }}
                     style={{ left: px - 4.5, bottom: -4.5 }}
@@ -573,7 +613,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
                 );
               })}
 
-              {/* Output / Selection Number Badge matching mockup's (1) on Score Model */}
+              {/* Output / Selection Number Badge */}
               {showBadge && (
                 <button
                   type="button"
@@ -593,7 +633,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
         })}
       </div>
 
-      {/* Selected Edge Delete Pill-Free Action */}
+      {/* Selected Edge Delete Action */}
       {selectedEdgeId && (
         <div
           data-canvas-ui
@@ -613,12 +653,11 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
         </div>
       )}
 
-      {/* Bottom-Left Zoom & Pan Controls matching exact mockup */}
+      {/* Bottom-Left Zoom & Pan Controls */}
       <div
         data-canvas-ui
         className="absolute bottom-3 left-3 z-20 flex items-center gap-2 bg-[#F4F4F4]/90 px-2 py-1"
       >
-        {/* Frame / Fit Selection */}
         <button
           type="button"
           onClick={handleFitView}
@@ -631,7 +670,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
           </svg>
         </button>
 
-        {/* Zoom Out (-) */}
         <button
           type="button"
           onClick={() => handleZoomStep(-0.1)}
@@ -641,7 +679,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
           −
         </button>
 
-        {/* Slider */}
         <input
           type="range"
           min={40}
@@ -654,7 +691,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
           className="studio-zoom-slider w-[96px] sm:w-[116px]"
         />
 
-        {/* Zoom In (+) */}
         <button
           type="button"
           onClick={() => handleZoomStep(0.1)}
@@ -664,7 +700,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
           +
         </button>
 
-        {/* 1:1 Reset Zoom */}
         <button
           type="button"
           onClick={() => onUpdateViewport({ panX: 0, panY: 0, zoom: 1 })}
@@ -674,7 +709,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
           1:1
         </button>
 
-        {/* Fit All */}
         <button
           type="button"
           onClick={handleFitView}
@@ -687,7 +721,6 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
           </svg>
         </button>
 
-        {/* Pan Toggle (4-way arrow) */}
         <button
           type="button"
           onClick={() => setPanMode(!panMode)}
@@ -708,7 +741,7 @@ export const PipelineCanvas: React.FC<PipelineCanvasProps> = ({
         </button>
       </div>
 
-      {/* Subtle Visual Scrollbars on Right & Bottom matching mockup */}
+      {/* Scrollbars */}
       <div aria-hidden="true" className="hidden sm:block absolute top-8 bottom-3 right-1 w-[8px] bg-[#E6E6E6]">
         <div className="w-full h-[46%] mt-[32px] bg-[#AEAEAE]" />
       </div>

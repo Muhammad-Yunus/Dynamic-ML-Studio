@@ -43,7 +43,11 @@ export interface ModuleDefinition {
     | 'evaluate'
     | 'stats'
     | 'text'
-    | 'io';
+    | 'io'
+    | 'format'
+    | 'python'
+    | 'r'
+    | 'webservice';
   inputPorts: NodePort[];
   outputPorts: NodePort[];
   params: NodeParamDef[];
@@ -61,6 +65,9 @@ export interface PipelineNode {
   x: number;
   y: number;
   params: Record<string, any>;
+  sweptParams?: Record<string, boolean>;
+  comment?: string;
+  commentExpanded?: boolean;
   status?: NodeRunStatus;
   errorMessage?: string;
   outputBadge?: string;

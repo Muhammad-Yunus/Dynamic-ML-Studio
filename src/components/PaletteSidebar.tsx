@@ -56,12 +56,16 @@ function buildTree(modules: ModuleDefinition[]): TreeGroup[] {
   // Order top-level categories to match Azure/Dynamic ML Studio hierarchy
   const preferredOrder = [
     'Saved Datasets',
+    'Data Format Conversions',
     'Data Input and Output',
     'Data Transformation',
     'Feature Selection',
     'Machine Learning',
+    'Python Language Modules',
+    'R Language Modules',
     'Statistical Functions',
     'Text Analytics',
+    'Web Service',
   ];
   return Array.from(roots.values()).sort((a, b) => {
     const ia = preferredOrder.indexOf(a.name);

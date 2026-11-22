@@ -75,6 +75,40 @@ export function ModuleIcon({
         </svg>
       );
 
+    case 'format':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none">
+          <rect x="3" y="4" width="10" height="12" rx="1" stroke={color} strokeWidth="1.5" />
+          <path d="M5.5 8H10.5M5.5 11H10.5M14 14L20 14M17.5 11.5L20 14L17.5 16.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+
+    case 'python':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none">
+          <path d="M12 3.5C8.5 3.5 8.8 5.2 8.8 6.8V8.5H13.5V9.5H6.5C4.8 9.5 3.5 10.7 3.5 13C3.5 15.3 4.7 16.5 6.5 16.5H8.5V14.2C8.5 12.6 9.8 11.5 11.5 11.5H15C16.2 11.5 17 10.6 17 9.4V6.3C17 4.7 15.6 3.5 12 3.5Z" stroke={color} strokeWidth="1.5" />
+          <circle cx="10.5" cy="6" r="0.9" fill={color} />
+          <path d="M12 20.5C15.5 20.5 15.2 18.8 15.2 17.2V15.5H10.5V14.5H17.5C19.2 14.5 20.5 13.3 20.5 11C20.5 8.7 19.3 7.5 17.5 7.5H15.5V9.8C15.5 11.4 14.2 12.5 12.5 12.5H9C7.8 12.5 7 13.4 7 14.6V17.7C7 19.3 8.4 20.5 12 20.5Z" stroke={color} strokeWidth="1.5" />
+        </svg>
+      );
+
+    case 'r':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none">
+          <ellipse cx="12" cy="11.5" rx="8.5" ry="6" stroke={color} strokeWidth="1.5" />
+          <path d="M9.5 16.5V8.5H13.2C14.7 8.5 15.6 9.3 15.6 10.6C15.6 11.9 14.7 12.6 13.2 12.6H9.5M12.8 12.6L15.8 16.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+
+    case 'webservice':
+      return (
+        <svg viewBox="0 0 24 24" className={className} fill="none">
+          <circle cx="12" cy="12" r="8.5" stroke={color} strokeWidth="1.5" />
+          <ellipse cx="12" cy="12" rx="3.8" ry="8.5" stroke={color} strokeWidth="1.3" />
+          <path d="M3.8 12H20.2M5.2 8.2H18.8M5.2 15.8H18.8" stroke={color} strokeWidth="1.2" />
+        </svg>
+      );
+
     case 'stats':
     default:
       return (

@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CopyPlus,
   FlaskConical,
@@ -248,6 +249,46 @@ export default function App() {
       ...prev,
       nodes: prev.nodes.map((n) =>
         n.id === nodeId ? { ...n, params: { ...n.params, [key]: value } } : n
+      ),
+    }));
+    setStatusText('In draft');
+  }, []);
+
+  const handleToggleSweptParam = useCallback((nodeId: string, key: string) => {
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) => {
+        if (n.id !== nodeId) return n;
+        const curr = Boolean(n.sweptParams?.[key]);
+        return {
+          ...n,
+          sweptParams: { ...(n.sweptParams || {}), [key]: !curr },
+        };
+      }),
+    }));
+    setStatusText('In draft');
+  }, []);
+
+  const handleToggleComment = useCallback((nodeId: string) => {
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) =>
+        n.id === nodeId ? { ...n, commentExpanded: !n.commentExpanded } : n
+      ),
+    }));
+  }, []);
+
+  const handleUpdateComment = useCallback((nodeId: string, comment: string, expanded?: boolean) => {
+    setGraph((prev) => ({
+      ...prev,
+      nodes: prev.nodes.map((n) =>
+        n.id === nodeId
+          ? {
+              ...n,
+              comment,
+              commentExpanded: expanded !== undefined ? expanded : n.commentExpanded,
+            }
+          : n
       ),
     }));
     setStatusText('In draft');
@@ -531,6 +572,8 @@ export default function App() {
               }}
               onSelectNode={handleSelectNode}
               onMoveNode={handleMoveNode}
+              onToggleComment={handleToggleComment}
+              onUpdateComment={handleUpdateComment}
               onDropNewModule={(id, x, y, lbl, params) => addModuleToCanvas(id, x, y, lbl, params)}
               onConnectPorts={handleConnectPorts}
               onDeleteEdge={handleDeleteEdge}
@@ -544,6 +587,18 @@ export default function App() {
               }}
             />
 
+            {/* Collapsed Inspector Re-open Tab */}
+            {inspectorCollapsed && (
+              <button
+                type="button"
+                onClick={() => setInspectorCollapsed(false)}
+                title="Expand Properties panel"
+                className="hidden lg:flex items-center justify-center w-6 bg-white border-l border-[#D9D9D9] text-[#444444] hover:text-[#0078D7] hover:bg-[#F5F8FA] shrink-0"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+            )}
+
             {/* Desktop Right Properties & Quick Help Inspector */}
             <div className="hidden lg:flex h-full">
               <InspectorPanel
@@ -554,6 +609,8 @@ export default function App() {
                 experimentStatus={statusText}
                 infraHealth={infraHealth}
                 onUpdateParam={handleUpdateParam}
+                onToggleSweptParam={handleToggleSweptParam}
+                onUpdateComment={handleUpdateComment}
                 onDeleteNode={handleDeleteNode}
                 onOpenVisualize={(id) => setVisualizeNodeId(id)}
                 onOpenHelp={(node) => setHelpNode(node)}
@@ -573,6 +630,8 @@ export default function App() {
                   experimentStatus={statusText}
                   infraHealth={infraHealth}
                   onUpdateParam={handleUpdateParam}
+                  onToggleSweptParam={handleToggleSweptParam}
+                  onUpdateComment={handleUpdateComment}
                   onDeleteNode={handleDeleteNode}
                   onOpenVisualize={(id) => setVisualizeNodeId(id)}
                   onOpenHelp={(node) => setHelpNode(node)}
