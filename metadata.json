@@ -1,0 +1,6 @@
+{
+  "name": "Dynamic ML Studio",
+  "description": "Visual node-based drag-and-drop machine learning pipeline studio powered by TorchJS, Drizzle ORM, PostgreSQL, and RustFS.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

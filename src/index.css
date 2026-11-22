@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', 'DM Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    background-color: #f4f4f4;
+    color: #333333;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+.font-mono-tabular {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Studio classic subtle scrollbars */
+.studio-scroll::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.studio-scroll::-webkit-scrollbar-track {
+  background: #f0f0f0;
+}
+
+.studio-scroll::-webkit-scrollbar-thumb {
+  background: #b8b8b8;
+  border: 2px solid #f0f0f0;
+}
+
+.studio-scroll::-webkit-scrollbar-thumb:hover {
+  background: #989898;
+}
+
+/* Custom studio zoom slider */
+input[type='range'].studio-zoom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  background: #c8c8c8;
+  outline: none;
+}
+
+input[type='range'].studio-zoom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 22px;
+  background: #f3f3f3;
+  border: 1px solid #8a8a8a;
+  cursor: pointer;
+  border-radius: 1px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+input[type='range'].studio-zoom-slider::-moz-range-thumb {
+  width: 12px;
+  height: 22px;
+  background: #f3f3f3;
+  border: 1px solid #8a8a8a;
+  cursor: pointer;
+  border-radius: 1px;
+}
